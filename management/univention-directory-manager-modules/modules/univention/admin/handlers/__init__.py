@@ -2269,7 +2269,7 @@ class simpleComputer(simpleLdap):
 
 	def __remove_dns_reverse_object(self, name, dnsEntryZoneReverse, ip):  # type: (str, str, str) -> None
 		def modify(rdn, zoneDN):  # type: (Text, str) -> None
-			zone_name = str2dn(zoneDN)[0][0][1]
+			zone_name = explode_rdn(zoneDN, True)[0]
 			for dn, attributes in self.lo.search(scope='domain', attr=['pTRRecord'], filter=filter_format('(&(relativeDomainName=%s)(zoneName=%s))', (rdn, zone_name))):
 				if len(attributes['pTRRecord']) == 1:
 					self.lo.delete('relativeDomainName=%s,%s' % (escape_dn_chars(rdn), zoneDN))
@@ -2328,7 +2328,7 @@ class simpleComputer(simpleLdap):
 			self.lo.add('relativeDomainName=%s,%s' % (escape_dn_chars(ipPart), zoneDn), [
 				('objectClass', [b'top', b'dNSZone', b'univentionObject']),
 				('univentionObjectType', [b'dns/ptr_record']),
-				('zoneName', [str2dn(zoneDn)[0][0][1].encode('UTF-8')]),
+				('zoneName', [explode_rdn(zoneDn, True)[0].encode('UTF-8')]),
 				('relativeDomainName', [ipPart.encode('ASCII')]),
 				('PTRRecord', [x.encode('UTF-8') for x in hostname_list])
 			])
@@ -2380,7 +2380,7 @@ class simpleComputer(simpleLdap):
 	def __add_related_ptrrecords(self, zoneDN, ip):  # type: (str, str) -> None
 		if not all((zoneDN, ip)):
 			return
-		ptrrecord = '%s.%s.' % (self.info['name'], str2dn(zoneDN)[0][0][1])
+		ptrrecord = '%s.%s.' % (self.info['name'], explode_rdn(zoneDN, True)[0])
 		ip_split = ip.split('.')
 		ip_split.reverse()
 		search_filter = filter_format('(|(relativeDomainName=%s)(relativeDomainName=%s)(relativeDomainName=%s))', (ip_split[0], '.'.join(ip_split[:1]), '.'.join(ip_split[:2])))
@@ -2389,7 +2389,7 @@ class simpleComputer(simpleLdap):
 			self.lo.modify(dn, [('pTRRecord', '', ptrrecord)])
 
 	def __remove_related_ptrrecords(self, zoneDN, ip):  # type: (str, str) -> None
-		ptrrecord = '%s.%s.' % (self.info['name'], str2dn(zoneDN)[0][0][1])
+		ptrrecord = '%s.%s.' % (self.info['name'], explode_rdn(zoneDN, True)[0])
 		ip_split = ip.split('.')
 		ip_split.reverse()
 		search_filter = filter_format('(|(relativeDomainName=%s)(relativeDomainName=%s)(relativeDomainName=%s))', (ip_split[0], '.'.join(ip_split[:1]), '.'.join(ip_split[:2])))
@@ -2404,7 +2404,7 @@ class simpleComputer(simpleLdap):
 			for zone in self['dnsEntryZoneForward']:
 				if zone == '':
 					continue
-				zoneName = str2dn(zone[0])[0][0][1]
+				zoneName = explode_rdn(zone[0], True)[0]
 				if len(zoneName) + len(self['name']) >= 63:
 					ud.debug(ud.ADMIN, ud.INFO, 'simpleComputer: length of Common Name is too long: %d' % (len(zoneName) + len(self['name']) + 1))
 					raise univention.admin.uexceptions.commonNameTooLong()
@@ -2495,7 +2495,7 @@ class simpleComputer(simpleLdap):
 					self.lo.add('relativeDomainName=%s,%s' % (escape_dn_chars(name), zoneDn), [
 						('objectClass', [b'top', b'dNSZone', b'univentionObject']),
 						('univentionObjectType', [b'dns/host_record']),
-						('zoneName', univention.admin.uldap.explodeDn(zoneDn, 1)[0].encode('UTF-8')),
+						('zoneName', explode_rdn(zoneDn, True)[0].encode('UTF-8')),
 						('aAAARecord', [ip]),
 						('relativeDomainName', [name.encode('UTF-8')])
 					])
@@ -2523,7 +2523,7 @@ class simpleComputer(simpleLdap):
 					self.lo.add('relativeDomainName=%s,%s' % (escape_dn_chars(name), zoneDn), [
 						('objectClass', [b'top', b'dNSZone', b'univentionObject']),
 						('univentionObjectType', [b'dns/host_record']),
-						('zoneName', univention.admin.uldap.explodeDn(zoneDn, 1)[0].encode('UTF-8')),
+						('zoneName', explode_rdn(zoneDn, True)[0].encode('UTF-8')),
 						('ARecord', [ip]),
 						('relativeDomainName', [name.encode('UTF-8')])
 					])
@@ -2552,7 +2552,7 @@ class simpleComputer(simpleLdap):
 				self.lo.add('relativeDomainName=%s,%s' % (escape_dn_chars(alias), dnsAliasZoneContainer), [
 					('objectClass', [b'top', b'dNSZone', b'univentionObject']),
 					('univentionObjectType', [b'dns/alias']),
-					('zoneName', univention.admin.uldap.explodeDn(dnsAliasZoneContainer, 1)[0].encode('UTF-8')),
+					('zoneName', explode_rdn(dnsAliasZoneContainer, True)[0].encode('UTF-8')),
 					('cNAMERecord', [b"%s.%s." % (name.encode('UTF-8'), dnsForwardZone.encode('UTF-8'))]),
 					('relativeDomainName', [alias.encode('UTF-8')])
 				])
@@ -2734,7 +2734,7 @@ class simpleComputer(simpleLdap):
 					self.__add_dns_forward_object(self['name'], self['dnsEntryZoneForward'][0][0], entry)
 				for dnsEntryZoneReverse in self.get('dnsEntryZoneReverse', []):
 					x, ip = self.__split_dns_line(dnsEntryZoneReverse)
-					zoneIsV6 = str2dn(x)[0][0][1].endswith('.ip6.arpa')
+					zoneIsV6 = explode_rdn(x, True)[0].endswith('.ip6.arpa')
 					entryIsV6 = ':' in entry
 					if zoneIsV6 == entryIsV6:
 						self.__add_dns_reverse_object(self['name'], x, entry)
@@ -2913,7 +2913,7 @@ class simpleComputer(simpleLdap):
 		"""
 		addr = ip_address(u'%s' % (sip,))
 		rev = addr.reverse_pointer
-		subnet = u".%s" % (str2dn(reverseDN)[0][0][1],)
+		subnet = u".%s" % (explode_rdn(reverseDN, True)[0],)
 		assert rev.endswith(subnet)
 		return rev[:-len(subnet)]
 
