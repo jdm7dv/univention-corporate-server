@@ -640,6 +640,7 @@ run_tests () {
 		return 0
 	fi
 
+	univention-remove --yes ucs-test-updater
 	LANG=de_DE.UTF-8 ucs-test -E dangerous -F junit -l "ucs-test.log" -p producttest $GENERATE_COVERAGE_REPORT "$@"
 }
 
