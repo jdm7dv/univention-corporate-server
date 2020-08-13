@@ -121,7 +121,7 @@ class InstallRemoveUpgrade(Register):
 					can_continue = False
 				if not can_continue:
 					self.fatal('Unable to %s. Aborting...' % action)
-					return
+					return False
 				for app in apps:
 					try:
 						self._show_license(app, args)
