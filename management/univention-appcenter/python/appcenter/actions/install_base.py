@@ -106,10 +106,10 @@ class InstallRemoveUpgrade(Register):
 				for app in new_apps:
 					if app.get_settings():
 						new_apps_have_settings = True
-						self.fatal('Automatically added App %s has its own settings. You should explicitely mention this App. This way, you may (or may not) set settings for this App via --set.')
+						self.fatal('Automatically added App %s has its own settings. You should explicitely mention this App. This way, you may (or may not) set settings for this App via --set.' % app)
 				if new_apps_have_settings:
 					self.fatal('Unable to %s. Aborting...' % action)
-					return
+					return False
 				if not args.autoinstalled:
 					# save the installed status for those apps that were not explicitely given
 					# but where added by resolving the dependencies
