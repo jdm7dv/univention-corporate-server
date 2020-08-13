@@ -38,7 +38,9 @@ def test_ucr_register_api():
 		package.install()
 
 		with UCSTestConfigRegistry():
-			changes = json.loads(subprocess.check_output(['ucr', 'set', '%s/foo=bar' % (package_name,)]).split(b'####')[1])
+			output = subprocess.check_output(['ucr', 'set', '%s/foo=bar' % (package_name,)]).split(b'####')
+			print(output)
+			changes = json.loads(output[1])
 			expected = {'%s/foo' % (package_name,): [None, 'bar']}
 			assert changes == expected, changes
 
